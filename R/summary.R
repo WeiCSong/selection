@@ -1,7 +1,9 @@
+#code for figure 5 and 6, the integration of all selection metrices.
+load("annot.RData")
 library(circlize)
 library("ComplexHeatmap")
 library(data.table)
-s1=fread("S1.csv",data.table=F)
+s1=fread("S1.csv",data.table=F) #A manually curated meta file for all GWAS included.
 rownames(s1)=s1[,1]
 head(s1)
 res_daf$fold=res_daf[,3]/(res_daf[,2]+res_daf[,3])
