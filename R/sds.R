@@ -10,56 +10,56 @@ setwd("/lustre/home/acct-bmelgn/bmelgn-3/ldsc/all_gwas/")
 write.csv(c("name","rho_true","p"),"sds_rho.csv")
 tmp=list.files(pattern="*.gz")
 for (name in tmp){
-gwas=fread(name,data.table=FALSE)
-gwas=gwas[which(gwas$sds!=0),]
-x=match(gwas$SNP,sds$ID)
-gwas$freq=sds[x,"DAF"]
+  gwas=fread(name,data.table=FALSE)
+  gwas=gwas[which(gwas$sds!=0),]
+  x=match(gwas$SNP,sds$ID)
+  gwas$freq=sds[x,"DAF"]
 
 ######re-normalized per DAF bin
-gwas$SDS=0
-for(i in seq(0.05,0.94,0.01)){
-x=gwas[which(gwas$freq>i&gwas$freq<i+0.01),"sds"]
-x=(x-mean(x))/sd(x)
-gwas[which(gwas$freq>i&gwas$freq<i+0.01),"SDS"]=x
-}
+  gwas$SDS=0
+  for(i in seq(0.05,0.94,0.01)){
+    x=gwas[which(gwas$freq>i&gwas$freq<i+0.01),"sds"]
+    x=(x-mean(x))/sd(x)
+    gwas[which(gwas$freq>i&gwas$freq<i+0.01),"SDS"]=x
+  }
 
 ########spearman rho 
-gwas=gwas[order(gwas$p),]
-res=c()
-for(i in seq(1,nrow(gwas),1000)){
-start=i
-end=min(i+1000,nrow(gwas))
-s=median(gwas[start:end,"SDS"])
-res=rbind(res,c(i,s))
-}
-rho_true=cor(res[,1],res[,2],method="spearman")
-l=order(gwas$CHR,gwas$BP)
+  gwas=gwas[order(gwas$p),]
+  res=c()
+  for(i in seq(1,nrow(gwas),1000)){
+    start=i
+    end=min(i+1000,nrow(gwas))
+    s=median(gwas[start:end,"SDS"])
+    res=rbind(res,c(i,s))
+  }
+  rho_true=cor(res[,1],res[,2],method="spearman")
+  l=order(gwas$CHR,gwas$BP)
 
 ##########block jackknife for rho
-bj=foreach(i=round(seq(1,nrow(gwas),length.out=1000)),.combine=rbind) %dopar% {
-L=l[-(i:(i+round(nrow(gwas)/1000)+1))]
-LL=L[order(L)]
-res=c()
-for(j in round(seq(1,length(L),length.out=1000))){
-start=j
-end=min(j+round(length(L)/1000)+1,length(L))
+  bj=foreach(i=round(seq(1,nrow(gwas),length.out=1000)),.combine=rbind) %dopar% {
+    L=l[-(i:(i+round(nrow(gwas)/1000)+1))]
+    LL=L[order(L)]
+    res=c()
+    for(j in round(seq(1,length(L),length.out=1000))){
+    start=j
+    end=min(j+round(length(L)/1000)+1,length(L))
 
-s=median(gwas[LL[start:end],"SDS"])
-res=rbind(res,c(j,s))
-}
-rho=cor(res[,1],res[,2],method="spearman")
-return(c(i,rho))
-}
-rm(L)
-rm(LL)
-rm(gwas)
-gc()
+    s=median(gwas[LL[start:end],"SDS"])
+    res=rbind(res,c(j,s))
+    }
+  rho=cor(res[,1],res[,2],method="spearman")
+  return(c(i,rho))
+  }
+  rm(L)
+  rm(LL)
+  rm(gwas)
+  gc()
 
 ################p value
-z=rho_true/sd(bj[,2])
-p=2*pnorm(-abs(z))
-line=c(name,rho_true,p)
-write(line,file="sds_rho.csv",append=TRUE)
+  z=rho_true/sd(bj[,2])
+  p=2*pnorm(-abs(z))
+  line=c(name,rho_true,p)
+  write(line,file="sds_rho.csv",append=TRUE)
 }
 
 ####################analysis
@@ -79,7 +79,7 @@ draw=draw[which(!is.na(draw$rho)),]
 #dis=annot[which(annot$disease==1),1]
 #draw=draw[which(draw$ID %in% dis),]
 f=function(x){
-c(x,median(draw[which(draw$group==x),2]))
+  c(x,median(draw[which(draw$group==x),2]))
 }
 d=data.frame(lapply(unique(draw$group),f))
 d=data.frame(t(d))
@@ -97,7 +97,7 @@ p_sds_all=p
 dis=annot[which(annot$disease==1),1]
 draw=draw[which(draw$ID %in% dis),]
 f=function(x){
-c(x,median(draw[which(draw$group==x),2]))
+  c(x,median(draw[which(draw$group==x),2]))
 }
 d=data.frame(lapply(unique(draw$group),f))
 d=data.frame(t(d))
@@ -152,14 +152,6 @@ res_sds[which(abs(res_sds$z)>4&res_sds[,2]<(-0.1)),"sig"]="positive"
 res_sds[,c(2,4)]=-res_sds[,c(2,4)]
 
 
-norm(0.005,0.001,12)
-head(derd)
-derd=res_sds[der,]
-scaling=function(x){
-sign=ifelse(x>0,1,-1)
-y=(10^abs(x)-1)*sign
-return(y)
-}
 derd=derd[,c(1,2,5)]
 colnames(derd)=c("ID","rho","sd")
 derd$low=derd$rho-1.96*derd$sd
@@ -209,10 +201,10 @@ dev.off()
 gwas=gwas[order(gwas$p),]
 res=c()
 for(i in seq(1,nrow(gwas),1000)){
-start=i
-end=min(i+1000,nrow(gwas))
-s=median(gwas[start:end,"SDS"])
-res=rbind(res,c(i,s))
+  start=i
+  end=min(i+1000,nrow(gwas))
+  s=median(gwas[start:end,"SDS"])
+  res=rbind(res,c(i,s))
 }
 res[,1]=4149:1
 head(res)
