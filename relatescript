@@ -1,0 +1,60 @@
+#!/bin/bash
+
+arr=($1)
+IFS=$' ';
+chr=${arr[0]}
+ld=${arr[1]}
+ud=${arr[2]}
+id=${arr[3]}
+
+id=${id/$'\r'/}
+mkdir $id
+cd $id
+../../tabix-0.2.6/tabix -h ../../1kg/ALL.chr$chr.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz $chr:$ld-$ud | \../../vcftools/perl/vcf-subset -c ../ind.txt > test.vcf
+/lustre/home/acct-bmelgn/bmelgn-3/vcftools/bin/vcftools --vcf test.vcf --recode --thin 10 --out test
+
+../bin/RelateFileFormats \
+                --mode ConvertFromVcf \
+                --haps $id.haps \
+                --sample $id.sample \
+                -i test.recode 
+
+../scripts/PrepareInputFiles/PrepareInputFiles.sh \
+                 --haps $id.haps \
+                 --sample $id.sample \
+                 --ancestor ../../mask/human_ancestor_GRCh37_e59/human_ancestor_$chr.fa \
+                --mask ../../mask/$chr.fasta \
+                 --poplabels ../1kg.poplabels \
+                 -o $id
+
+
+../bin/Relate \
+      --mode All \
+      -m 1.25e-8 \
+      -N 30000 \
+      --haps $id.haps \
+      --sample $id.sample \
+      --map ../../recmap/$chr.rec.map \
+     --seed 1 \
+      -o $id
+      
+../scripts/EstimatePopulationSize/EstimatePopulationSize.sh \
+             -i $id \
+             -m 1.25e-8 \
+              --poplabels ../1kg.poplabels \
+              --seed 1 \
+              --num_iter 3 \
+              --threshold 0.5 \
+              -o x$id
+
+../scripts/DetectSelection/DetectSelection.sh \
+                 -i x$id \
+                 -o $id \
+                -m 1.25e-8       
+
+rm *vcf
+rm x*
+
+IFS=$'\n';
+
+cd ..
