@@ -1,0 +1,40 @@
+#!/bin/bash
+
+id=$1
+
+if [ $id -lt 2 ]
+then
+slim /lustre/home/acct-bmelgn/bmelgn-3/slim_adaptation.txt
+else
+slim /lustre/home/acct-bmelgn/bmelgn-3/slim_neutral.txt
+fi
+
+/lustre/home/acct-bmelgn/bmelgn-3/Plink --vcf sample.vcf --make-bed --noweb --out sample
+/lustre/home/acct-bmelgn/bmelgn-3/Plink --bfile sample --pca 10 --out pca
+
+Rscript /lustre/home/acct-bmelgn/bmelgn-3/slimGWAS.r 
+#read from outputFull, write allvariant.txt, SDS file and covar
+
+/lustre/home/acct-bmelgn/bmelgn-3/Plink --bfile sample --indep 50 5 1.5 --noweb
+
+/lustre/home/acct-bmelgn/bmelgn-3/Plink --bfile sample --linear --covar pca.eigenvec --allow-no-sex --maf 0.01 
+#save gwas summary statistics to plink assoc
+
+Rscript /lustre/home/acct-bmelgn/bmelgn-3/slimNEO.r 
+#read from plink.prune.in, outputSmaple and plink assoc, save statistics to neo.txt
+
+Rscript /lustre/home/acct-bmelgn/bmelgn-3/slimS.r #done
+ #read from plink.prune.in, allvariant.txt plink assoc
+#save S result to S.txt
+
+Rscript /lustre/home/acct-bmelgn/bmelgn-3/compute_SDS.R sfile.txt tfile.txt obs.txt /lustre/home/acct-bmelgn/bmelgn-3/boundary.txt /lustre/home/acct-bmelgn/bmelgn-3/gamma.txt 1e-7	> sds1.txt; 
+
+Rscript /lustre/home/acct-bmelgn/bmelgn-3/slimRHO.r #done
+#read from allvariant.txt, plink assoc and sds.txt
+#save rhoSDS result to rho.txt
+
+
+#rm ./p*
+#rm sample.vcf
+#rm final.txt
+#rm tfile
