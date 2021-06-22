@@ -1,0 +1,20 @@
+initialize() {
+ initializeMutationRate(2.36e-8);
+ initializeMutationType("m1", 0.5, "f", 0.0);
+ initializeMutationType("m2", 0.5, "n", 0.0, 0.1);
+ initializeMutationType("m3", 0.5, "n", 0.0, 0.1);
+ initializeGenomicElementType("g1", c(m1,m2,m3), c(0.95,0.045,0.005));
+ initializeGenomicElement(g1, 0, 9999999);
+ initializeRecombinationRate(1e-8);
+} 
+1:73105 fitness(m2) { return 1.0; }
+1:73105 fitness(m3) { return 1.0; }
+// INITIALIZE the ancestral African population
+1 { sim.addSubpop("p1", asInteger(round(7310.370867595234))); }
+// END BURN-IN; EXPAND the African population
+73104 { p1.setSubpopulationSize(asInteger(round(14474.54608753566))); 
+ }
+
+73105 late() { sim.outputFull("burnin.txt");  
+ sim.simulationFinished(); 
+ }

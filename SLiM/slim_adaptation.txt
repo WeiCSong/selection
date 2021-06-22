@@ -1,0 +1,110 @@
+initialize() {
+ initializeMutationRate(2.36e-8);
+ initializeMutationType("m1", 0.5, "f", 0.0);
+ initializeMutationType("m2", 0.5, "n", 0.0, 0.1);
+ initializeMutationType("m3", 0.5, "n", 0.0, 0.1);
+ initializeGenomicElementType("g1", c(m1,m2,m3), c(0.95,0.045,0.005));
+ initializeGenomicElement(g1, 0, 9999999);
+ initializeRecombinationRate(1e-8);
+ defineConstant("h2", rnorm(1,0.13,0.02));//true distribution of our 870 traits
+} 
+fitness(m2) { return 1.0; }
+fitness(m3) { return 1.0; }
+1 { sim.addSubpop("p1", asInteger(7310)); }
+2 {sim.readFromPopulationFile("../burnin.txt");}
+
+73106 { p1.setSubpopulationSize(asInteger(14474)); 
+//end of burn-in
+} 
+
+76968 {//Eurasian bottle neck
+sim.addSubpopSplit("p2", asInteger(round(1861.288190027689)), p1);
+p1.setSubpopulationSize(asInteger(2000));
+p1.setMigrationRates(c(p2), c(15.24422112e-5));
+p2.setMigrationRates(c(p1), c(15.24422112e-5));
+} 
+
+76969: late() {
+ inds = sim.subpopulations.individuals;
+// sum the additive effects of QTLs
+ additive = inds.sumOfMutationsOfType(m3);
+// model environmental variance, according to the target heritability
+ V_A = sd(additive)^2;
+ V_E = (V_A - h2 * V_A) / h2; // from h2 == V_A / (V_A + V_E)
+ env = rnorm(size(inds), 0.0, sqrt(V_E));
+
+// set fitness effects and remember phenotypes
+ phenotypes = additive + env;
+ m=mean(phenotypes);
+ std=sd(phenotypes);
+ inds.fitnessScaling = 1.0 + (phenotypes-m)/(10*std); 
+ inds.tagF = phenotypes; 
+} 
+
+
+78084 {//Asian bottle neck
+sim.addSubpopSplit("p3", asInteger(round(553.8181989)), p2);
+p2.setSubpopulationSize(asInteger(round(1032.1046957333444)));
+p1.setMigrationRates(c(p2, p3), c(2.54332678e-5, 0.7770583877e-5));
+p2.setMigrationRates(c(p1, p3), c(2.54332678e-5, 3.115817913e-5));
+p3.setMigrationRates(c(p1, p2), c(0.7770583877e-5, 3.115817913e-5));
+} 
+
+78084:78284 {//explosive growth
+ t = sim.generation - 78084;
+ p2_size = round(1032.1046957333444 * (1 + 0.003784324268)^t);
+ p3_size = round(553.8181989 * (1 + 0.004780219543)^t);
+
+p2.setSubpopulationSize(asInteger(p2_size));
+p3.setSubpopulationSize(asInteger(p3_size));
+} 
+
+78284 {//European subpopulations and South Asian subpopulation
+sim.addSubpopSplit("p4", asInteger(700), p2);
+sim.addSubpopSplit("p5", asInteger(700), p2);
+p2.setSubpopulationSize(asInteger(700));
+p3.setSubpopulationSize(asInteger(700));
+p2.setMigrationRates(c(p3, p4), c(0.01, 0.01));
+p3.setMigrationRates(p2, 0.01);
+p4.setMigrationRates(c(p2, p5), c(0.01, 0.01));
+p5.setMigrationRates(p4, 0.01);
+}
+
+78285:79022 {
+ t = sim.generation - 78284;
+ mr=1-0.9996813^t;
+ mr1=(1-0.9996813^t)/2;
+ p3.setMigrationRates(c(p4,p5),c(mr,mr1)); //neareast farmers migrating towards north; here we assume that the largest migration rate was 0.01, as between p2 and p3.
+ 
+ p2_size = round(700* (1 + 0.003784324268)^t);
+
+ p2.setSubpopulationSize(asInteger(p2_size));
+ p3.setSubpopulationSize(asInteger(p2_size));
+ p4.setSubpopulationSize(asInteger(p2_size));
+ p5.setSubpopulationSize(asInteger(p2_size));
+}
+ 
+78800:78900 { //generate pan-neolithic samples
+ t = 79024-sim.generation;
+ p2.sampleIndividuals(1).genomes.output(filePath="p2" + "gen" + t + ".txt");  
+ sample(p4.individuals, 1).genomes.output(filePath="p4" + "gen" + t + ".txt");   
+ sample(p5.individuals, 1).genomes.output(filePath="p5" + "gen" + t + ".txt");  
+ }
+
+79023 {
+ p3.setSubpopulationSize(0);
+ p1.setSubpopulationSize(0); 
+ p2.setSubpopulationSize(1000); 
+ p4.setSubpopulationSize(1000);
+ p5.setSubpopulationSize(1000);
+ sample(p4.individuals, 1).genomes.output(filePath="a"+ h2 + "a.txt");  
+}
+
+79024  late() {
+sim.outputFull("final.txt");
+allIndividuals = sim.subpopulations.individuals; 
+allIndividuals.genomes.outputVCF("sample.vcf");
+p5.individuals.genomes.output("p5.txt");
+sim.simulationFinished(); 
+}
+
