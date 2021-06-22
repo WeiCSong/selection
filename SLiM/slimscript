@@ -1,4 +1,8 @@
 #!/bin/bash
+#Script for burin-in stage was provided separately. Result analysis of SLiM included only simple statistics and was not provided. 
+#This script is for parallel computation over id=1~10. there are 40 burn-in, and this script was repeated 10 times for each burn-in.
+
+
 
 id=$1
 
